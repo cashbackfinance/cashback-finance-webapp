@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.netlify/
+*.pem
+*.key
+*.p12
+*.pfx
+*.zip
+work/
+outputs/
