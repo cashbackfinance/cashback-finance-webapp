@@ -47,3 +47,6 @@ Syntax und 33 Frontend-Prüfungen bestanden. Lokale Tests enthalten HTML-Tags un
 ## Ergänzung V1.4.5 – SDK festgelegt
 
 Supabase JS auf 2.117.2 festgelegt; SHA-384-Integritätsprüfung und crossorigin=anonymous ergänzt. Der geprüfte exakte CDN-Inhalt war byteidentisch zum bisherigen @2-Aufruf. Keine Backend- oder Fachlogikänderung. Nur development; keine Produktionsfreigabe.
+
+## Ergänzung V1.4.6 – Browser-Sicherheitsheader
+CSP begrenzt Skripte und Netzwerkziele, Framing ist gesperrt, nosniff und Referrer-/Permissions-Policy ergänzt. Inline-Stile bleiben für bestehende Darstellung zugelassen. Nur development; kein Production-Deploy und keine Backend-Änderung. Browser-Abnahme erforderlich.
