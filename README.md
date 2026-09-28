@@ -31,3 +31,9 @@ Syntaxprüfung und 30 Frontend-Prüfungen bestanden, einschließlich Fensterwech
 Der V1.4-Branch-Deploy und echte Anmeldung beider Rollen wurden geprüft. Der Online-Ablauf einer ausdrücklich synthetischen Sparzieländerung ist vollständig geprüft: Customer-Anfrage, Advisor-Inbox, dokumentierte Ablehnung, geschlossener Vorgang, Customer-Rückmeldung. Ziel und Progress bleiben unverändert. Das separat freigegebene Security-Backend-Paket ist umgesetzt.
 
 Offen vor Produktionsfreigabe: weitere fachliche Online-Abnahmen, tatsächliche Paralleltests und vollständige Sicherheitsabnahme. Die erfolgreiche Ablehnung eines Testantrags ist keine Abnahme aller Entscheidungswege. V1.4.1 muss nach dem Branch-Deploy online geprüft werden.
+
+## Ergänzung V1.4.2 – Advisor-Jahresprüfstatus
+
+Die freigegebene Migration add_advisor_financial_area_year_status ergänzt reviewed_this_year in der bestehenden Advisor-Kundenübersicht. Sie verwendet dieselbe serverseitige Definition wie die Customer-Finanzlandkarte. Die Advisor-Anzeige trennt den Jahresprüfstatus vom gespeicherten Bearbeitungsstatus. Fehlende historische Prüfdaten bleiben als nicht hinterlegt sichtbar.
+
+Syntax und 31 Frontend-Prüfungen bestanden. Backend-Abnahme mit ROLLBACK: Gleichheit mit Customer-View, Zugriffssperre für Customer/anonym, Grenzen für Jahr, Verifikation, Person und Finanzbereich. Keine neuen Progress-Ereignisse und keine historische Datenkorrektur. Online-Advisor-Abnahme des Branch-Deploys steht noch aus.
