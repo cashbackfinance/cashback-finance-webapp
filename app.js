@@ -312,5 +312,10 @@ function bindWorkflow(){
   runWorkflow('resolve',async()=>{const {error}=await sb.schema('api').rpc('advisor_resolve_savings_goal_achievement',{p_request_id:button.dataset.resolveAchievement,p_decision:decision});if(error)throw error;},async()=>{await loadAdvisorImpulses();await loadCustomerOverview(button.dataset.personId);},decision==='verified'?'Zielerreichung bestätigt. Vorgang und Kundenakte wurden aktualisiert.':'Zielerreichung abgelehnt. Der Vorgang wurde geschlossen.');
  });
 }
-window.addEventListener('focus',()=>{if(authSession&&['home','benefit','coach','referrals','work'].includes(state.page)&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))refreshData();});
+// A focus event can arrive before a click. Keep the current DOM and drafts intact.
+window.addEventListener('focus',()=>{
+ if(!authSession||refreshing||pendingActions.size)return;
+ const refresh=document.querySelector('[data-refresh]');
+ if(refresh&&!refresh.disabled)refresh.textContent='Daten auf Aktualität prüfen';
+});
 initApp();

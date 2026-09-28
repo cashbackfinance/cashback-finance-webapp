@@ -22,4 +22,12 @@ Die freigegebene Migration `add_controlled_savings_goal_changes` ist bereits im 
 
 Prüfstand: Syntax und 27 Frontend-Prüfungen erfolgreich. Backend-Abläufe mit Customer-/Advisor-Rollen sowie die bestehende Zielerreichung getestet; sämtliche Testdaten zurückgerollt. Lokale Browser-Prüfung mit gekennzeichneten simulierten Antworten erfolgreich.
 
-Offen vor Produktionsfreigabe: Netlify-Branch-Deploy, echte Anmeldung beider Rollen, vollständige Online-Abnahme und weitere Sicherheitsmaßnahmen. Ein möglicherweise erschöpftes Netlify-Creditlimit muss vor dem Online-Test behoben sein.
+## Ergänzung V1.4.1 – Fensterwechsel
+
+Die Rückkehr zum Browserfenster ersetzt die laufende Ansicht nicht mehr automatisch. Der Aktualisieren-Button zeigt stattdessen „Daten auf Aktualität prüfen“. Erst ein bewusster Klick lädt neu. Dadurch bleiben Klickziele und ungesendete Formulare beim Fensterwechsel erhalten. Fachliche Aktionen laden ihre Ergebnisse weiterhin neu aus dem Core.
+
+Syntaxprüfung und 30 Frontend-Prüfungen bestanden, einschließlich Fensterwechsel ohne zusätzliche Datenanfrage, Erhalt eines Formularentwurfs und expliziter Aktualisierung.
+
+Der V1.4-Branch-Deploy und echte Anmeldung beider Rollen wurden geprüft. Der Online-Ablauf einer ausdrücklich synthetischen Sparzieländerung ist vollständig geprüft: Customer-Anfrage, Advisor-Inbox, dokumentierte Ablehnung, geschlossener Vorgang, Customer-Rückmeldung. Ziel und Progress bleiben unverändert. Das separat freigegebene Security-Backend-Paket ist umgesetzt.
+
+Offen vor Produktionsfreigabe: weitere fachliche Online-Abnahmen, tatsächliche Paralleltests und vollständige Sicherheitsabnahme. Die erfolgreiche Ablehnung eines Testantrags ist keine Abnahme aller Entscheidungswege. V1.4.1 muss nach dem Branch-Deploy online geprüft werden.
