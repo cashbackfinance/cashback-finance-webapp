@@ -180,10 +180,145 @@ function advisorWorkPage(){
  const high=advisorImpulses.filter(i=>i.priority==='high').length;
  return `<header><div><span class="eyebrow">ADVISOR · VORGÄNGE</span><h1>Offene Arbeit</h1><p>Kundenimpulse und fachliche Prüfungen.</p></div>${roleSwitch()}</header><div class="advisor-summary"><div><span>Offen</span><strong>${advisorImpulses.length}</strong></div><div><span>Hohe Priorität</span><strong>${high}</strong></div></div><div class="card work-list">${advisorImpulses.map(i=>{
  const achievement=i.source_type==='savings_goal_achievement_request';
- return `<div class="work-item ${i.priority==='high'?'high':''}"><div class="work-main"><div class="work-meta"><span>${i.status==='in_progress'?'IN BEARBEITUNG':'NEU'}</span><span>${dateDE(i.created_at)}</span></div><h3>${escapeHTML(i.title)}</h3><p><b>${escapeHTML([i.first_name,i.last_name].filter(Boolean).join(' ')||'Kunde')}</b> · ${escapeHTML(i.customer_number||'Keine Kundennummer')}</p>${achievement?'<p class="fine">Zielerreichung fachlich prüfen, bevor du bestätigst. Bestätigen erzeugt serverseitig einmalig +5.</p>':''}</div><div class="work-actions"><button data-open-customer="${escapeHTML(i.person_id)}">Kunde öffnen</button>${i.source_type==='savings_goal_change_request'?`<button class="primary" data-open-goal-change="${escapeHTML(i.source_id)}">Sparzieländerung prüfen</button>`:i.source_type==='review_request'?`<button class="primary" data-open-review="${escapeHTML(i.source_id)}">Review prüfen</button>`:i.source_type==='referral'?`<button class="primary" data-open-referral="${escapeHTML(i.source_id)}">Empfehlung prüfen</button>`:achievement?(i.source_id?`<button class="primary" data-resolve-achievement="${escapeHTML(i.source_id)}" data-person-id="${escapeHTML(i.person_id)}" data-decision="verified">Bestätigen (+5)</button><button data-resolve-achievement="${escapeHTML(i.source_id)}" data-person-id="${escapeHTML(i.person_id)}" data-decision="rejected">Ablehnen</button>`:'<span>Die Zuordnung zur Meldung fehlt.</span>'):`<button class="primary" data-impulse-status="${escapeHTML(i.impulse_id)}" data-status="${i.status==='new'?'in_progress':'done'}">${i.status==='new'?'Bearbeitung starten':'Erledigt'}</button>`}</div></div>`;
+ return `<div class="work-item ${i.priority==='high'?'high':''}"><div class="work-main"><div class="work-meta"><span>${i.status==='in_progress'?'IN BEARBEITUNG':'NEU'}</span><span>${dateDE(i.created_at)}</span></div><h3>${escapeHTML(i.title)}</h3><p><b>${escapeHTML([i.first_name,i.last_name].filter(Boolean).join(' ')||'Kunde')}</b> · ${escapeHTML(i.customer_number||'Keine Kundennummer')}</p>${achievement?'<p class="fine">Zielerreichung fachlich prüfen, bevor du bestätigst. Bestätigen erzeugt serverseitig einmalig +5.</p>':''}</div><div class="work-actions"><button data-open-customer="${escapeHTML(i.person_id)}">Kunde öffnen</button>${i.source_type==='savings_goal_change_request'?`<button class="primary" data-open-goal-change="${escapeHTML(i.source_id)}">Sparzieländerung prüfen</button>`:i.source_type==='review_request'?`<button class="primary" data-open-review="${escapeHTML(i.source_id)}">Review prüfen</button>`:i.source_type==='referral'?`<button class="primary" data-open-referral="${escapeHTML(i.source_id)}">Empfehlung prüfen</button>`:achievement?(i.source_id?`<button class="primary" data-open-achievement="${escapeHTML(i.source_id)}">Zielerreichung prüfen</button>`:'<span>Die Zuordnung zur Meldung fehlt.</span>'):`<button class="primary" data-impulse-status="${escapeHTML(i.impulse_id)}" data-status="${i.status==='new'?'in_progress':'done'}">${i.status==='new'?'Bearbeitung starten':'Erledigt'}</button>`}</div></div>`;
  }).join('')||'<div class="empty-state">Keine offenen Vorgänge.</div>'}</div><div class="notice"><b>i</b><div><strong>Arbeitsstatus und Verifikation</strong><p>„Erledigt“ schließt einen Arbeitsvorgang. Fachliche Verifikationen erfolgen über die dafür vorgesehenen Aktionen.</p></div></div>`;
 }
 
+let advisorAchievement=null,achievementDraft={confirmed:false};
+
+async function loadAdvisorAchievement(id){
+ const {data,error}=await sb.schema('api').rpc('advisor_savings_goal_achievement_details',{p_request_id:id});
+ if(error)throw error;
+ advisorAchievement=data;
+}
+
+function advisorAchievementPage(){
+ const r=advisorAchievement;
+ if(!r)return '<div class="card"><p>Keine Zielerreichungsmeldung geöffnet.</p><button data-go="work">Zu den Vorgängen</button></div>';
+
+ const g=r.goal||{},p=r.person||{},open=['requested','in_review'].includes(r.status);
+ const target=Number(g.target_amount||0);
+ const total=Number(r.microsavings_total||0);
+ const remaining=Number(r.remaining_amount||0);
+ const pct=Number(r.achievement_percent||0);
+
+ return `<header><div><button class="back-map" data-go="work">← Vorgänge</button><span class="eyebrow">SPARZIELERREICHUNG PRÜFEN</span><h1>${escapeHTML(g.title||'Sparziel')}</h1><p>${escapeHTML([p.first_name,p.last_name].filter(Boolean).join(' ')||'Kunde')} · ${escapeHTML(p.customer_number||'Keine Kundennummer')}</p></div>${roleSwitch()}</header>
+
+ <section class="card">
+   <span class="eyebrow">MELDUNG</span>
+   <h3>Vom Kunden als erreicht gemeldet</h3>
+   <p>Meldedatum: ${dateDE(r.requested_at)}</p>
+   ${r.note?`<p><strong>Kundennotiz:</strong> ${escapeHTML(r.note)}</p>`:'<p class="fine">Keine zusätzliche Kundennotiz hinterlegt.</p>'}
+ </section>
+
+ <div class="grid3">
+   <div class="card">
+     <span class="label">SPARZIEL</span>
+     <strong class="metric">${euro(target)}</strong>
+     <span>${escapeHTML(g.title||'Sparziel')}</span>
+   </div>
+   <div class="card">
+     <span class="label">ERFASSTE SPARLEISTUNG</span>
+     <strong class="metric">${euro(total)}</strong>
+     <span>Interne Microsavings-Historie</span>
+   </div>
+   <div class="card featured">
+     <span class="label">ERFÜLLUNGSGRAD</span>
+     <strong class="metric">${Number.isFinite(pct)?String(pct).replace('.',',')+' %':'—'}</strong>
+     <span>${remaining>0?euro(remaining)+' bis zum Ziel':'Zielbetrag rechnerisch erreicht'}</span>
+   </div>
+ </div>
+
+ <section class="card">
+   <span class="eyebrow">PRÜFGRUNDLAGE</span>
+   <h3>Microsavings-Historie</h3>
+   ${(r.microsavings||[]).length
+     ?(r.microsavings||[]).map(m=>`<div class="eventrow"><div><b>${euro(m.amount)}</b><span>${escapeHTML(m.notes||'Microsaving')} · ${dateDE(m.occurred_at)}</span></div></div>`).join('')
+     :'<p>Keine Microsavings zum Sparziel hinterlegt.</p>'}
+   <p class="fine">Diese Daten bilden die interne Prüfbasis. Eine externe Nachweisreferenz ist nicht zwingend erforderlich, wenn die Zielerreichung daraus fachlich nachvollziehbar ist.</p>
+ </section>
+
+ ${!open
+   ?`<section class="card"><h3>Prüfung abgeschlossen</h3><p>Status: ${escapeHTML(r.status)}</p></section>`
+   :`<section class="card">
+       <span class="eyebrow">FACHLICHE ENTSCHEIDUNG</span>
+       <h3>Zielerreichung verifizieren</h3>
+
+       <label class="verification-check">
+         <input id="achievementConfirmed" type="checkbox" ${achievementDraft.confirmed?'checked':''}>
+         Ich habe Sparziel, erfasste Sparleistung und die vorliegenden Informationen fachlich geprüft.
+       </label>
+
+       <p class="fine">Erst die bestätigte menschliche Prüfung darf serverseitig einmalig +5 Progress erzeugen.</p>
+
+       <button class="primary" data-resolve-achievement-v2="verified">Zielerreichung bestätigen (+5)</button>
+       <button data-resolve-achievement-v2="rejected">Ablehnen</button>
+     </section>`}`;
+}
+
+function bindAchievementWorkflow(){
+ document.querySelectorAll('[data-open-achievement]').forEach(b=>b.onclick=async()=>{
+   b.disabled=true;
+
+   try{
+     await loadAdvisorAchievement(b.dataset.openAchievement);
+     achievementDraft={confirmed:false};
+     state.page='achievementcheck';
+     feedback='';
+     render();
+     scrollTo(0,0);
+   }catch(e){
+     b.disabled=false;
+     alert('Die Zielerreichungsmeldung konnte nicht geladen werden.');
+   }
+ });
+
+ const checked=document.querySelector('#achievementConfirmed');
+ if(checked)checked.onchange=()=>achievementDraft.confirmed=checked.checked;
+
+ document.querySelectorAll('[data-resolve-achievement-v2]').forEach(button=>button.onclick=()=>{
+   if(liveUserRole==='customer')return;
+
+   const decision=button.dataset.resolveAchievementV2;
+
+   if(decision==='verified'&&!achievementDraft.confirmed){
+     feedback='Bitte bestätige zuerst die fachliche Prüfung von Ziel und Sparleistung.';
+     render();
+     return;
+   }
+
+   if(!confirm(
+     decision==='verified'
+       ?'Geprüfte Zielerreichung verbindlich bestätigen? Das Backend verbucht einmalig +5.'
+       :'Zielerreichungsmeldung ablehnen? Es werden keine Punkte vergeben.'
+   ))return;
+
+   const r=advisorAchievement;
+
+   runWorkflow(
+     'resolve-achievement-v2',
+     async()=>{
+       const {error}=await sb.schema('api').rpc(
+         'advisor_resolve_savings_goal_achievement_v2',
+         {
+           p_request_id:r.request_id,
+           p_decision:decision,
+           p_confirmed:decision==='verified'?achievementDraft.confirmed:false
+         }
+       );
+       if(error)throw error;
+     },
+     async()=>{
+       await loadAdvisorAchievement(r.request_id);
+       await loadAdvisorImpulses();
+       await loadCustomerOverview(r.person_id);
+     },
+     decision==='verified'
+       ?'Zielerreichung bestätigt. Vorgang und Kundenakte wurden aktualisiert.'
+       :'Zielerreichung abgelehnt. Der Vorgang wurde geschlossen.'
+   );
+ });
+}
 let advisorReview=null,reviewDraft={result:'',text:'',evidence:'',confirmed:false};
 const REVIEW_RESULTS={no_action_required:'Kein Handlungsbedarf',optimization_recommended:'Optimierung empfohlen',further_information_required:'Weitere Informationen erforderlich',case_created:'Beratungsfall angelegt'};
 async function loadAdvisorReview(id){const {data,error}=await sb.schema('api').rpc('advisor_review_details',{p_review_id:id});if(error)throw error;advisorReview=data;}
@@ -236,7 +371,7 @@ function bindReferralWorkflow(){
  };
 }
 function events(){return `<header><div><span class="eyebrow">PROGRESS LEDGER</span><h1>${state.score} Punkte</h1></div>${roleSwitch()}</header><div class="card">${state.events.map(e=>`<div class="eventrow"><div><b>${e[0]}</b><span>verified · ${YEAR}</span></div><strong>+${e[1]}</strong></div>`).join('')}</div>`}
-function render(){if(!authSession){renderAuth();return;}const allowed=state.role==='customer'?['home','benefit','finances','discover','coach','events','microsavings','referrals','areadetail']:['advisor','customers','customer','work','referralcheck','reviewcheck','goalchange'];if(!allowed.includes(state.page))state.page=allowed[0];calc();let pages={home,benefit,finances,discover,coach,advisor,customers:advisorCustomersPage,customer:advisorCustomerPage,work:advisorWorkPage,goalchange:advisorGoalChangePage,reviewcheck:advisorReviewPage,referralcheck:advisorReferralPage,events,microsavings,referrals,areadetail:areaDetail};let nav=state.role==='customer'?navCustomer:navAdvisor;if(!pages[state.page])state.page=state.role==='customer'?'home':'advisor';document.querySelector('#app').innerHTML=`<div class="app"><aside><div class="brand">Cashback <b>Finance</b><small>${state.role==='customer'?'DEIN VORTEILSPORTAL':'INTERNER ARBEITSBEREICH'}</small></div><nav>${nav.map(([id,ic,l])=>`<button data-go="${id}" class="${state.page===id?'active':''}"><span>${ic}</span>${l}</button>`).join('')}</nav><div class="asidefoot">Benefit Engine <b>V0.3</b><span>Multi-Role V1.4 · Kontrollierte Sparzieländerung</span></div></aside><main><div class="refreshbar"><button data-refresh ${refreshing?'disabled':''}>${refreshing?'Wird aktualisiert …':'Daten aktualisieren'}</button></div>${feedback?`<div class="notice" role="status">${escapeHTML(feedback)}</div>`:''}${dataError?`<div class="card" role="alert">${roleSwitch()}<h2>Daten konnten nicht geladen werden</h2><p>${escapeHTML(dataError)}</p><p>Bitte aktualisiere die Daten, bevor du fortfährst.</p></div>`:pages[state.page]()}</main><div class="bottom">${nav.map(([id,ic,l])=>`<button data-go="${id}" class="${state.page===id?'active':''}"><span>${ic}</span><small>${l}</small></button>`).join('')}</div></div>`;bind();save();if(!dataError&&state.role==='customer'&&state.page==='home')animateHome()}
+function render(){if(!authSession){renderAuth();return;}const allowed=state.role==='customer'?['home','benefit','finances','discover','coach','events','microsavings','referrals','areadetail']:['advisor','customers','customer','work','referralcheck','reviewcheck','goalchange','achievementcheck'];if(!allowed.includes(state.page))state.page=allowed[0];calc();let pages={home,benefit,finances,discover,coach,advisor,customers:advisorCustomersPage,customer:advisorCustomerPage,work:advisorWorkPage,goalchange:advisorGoalChangePage,reviewcheck:advisorReviewPage,referralcheck:advisorReferralPage,achievementcheck:advisorAchievementPage,events,microsavings,referrals,areadetail:areaDetail};let nav=state.role==='customer'?navCustomer:navAdvisor;if(!pages[state.page])state.page=state.role==='customer'?'home':'advisor';document.querySelector('#app').innerHTML=`<div class="app"><aside><div class="brand">Cashback <b>Finance</b><small>${state.role==='customer'?'DEIN VORTEILSPORTAL':'INTERNER ARBEITSBEREICH'}</small></div><nav>${nav.map(([id,ic,l])=>`<button data-go="${id}" class="${state.page===id?'active':''}"><span>${ic}</span>${l}</button>`).join('')}</nav><div class="asidefoot">Benefit Engine <b>V0.3</b><span>Multi-Role V1.4.3 · Kontrollierte Sparzielverifikation</span></div></aside><main><div class="refreshbar"><button data-refresh ${refreshing?'disabled':''}>${refreshing?'Wird aktualisiert …':'Daten aktualisieren'}</button></div>${feedback?`<div class="notice" role="status">${escapeHTML(feedback)}</div>`:''}${dataError?`<div class="card" role="alert">${roleSwitch()}<h2>Daten konnten nicht geladen werden</h2><p>${escapeHTML(dataError)}</p><p>Bitte aktualisiere die Daten, bevor du fortfährst.</p></div>`:pages[state.page]()}</main><div class="bottom">${nav.map(([id,ic,l])=>`<button data-go="${id}" class="${state.page===id?'active':''}"><span>${ic}</span><small>${l}</small></button>`).join('')}</div></div>`;bind();save();if(!dataError&&state.role==='customer'&&state.page==='home')animateHome()}
 function animateHome(){
   const counter=document.querySelector('#scoreCounter');
   if(counter){const target=Number(counter.dataset.target)||0,start=performance.now(),duration=Math.min(1300,650+target*7);function tick(now){const t=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-t,3);counter.textContent=Math.round(target*ease);if(t<1)requestAnimationFrame(tick)}requestAnimationFrame(tick)}
@@ -273,7 +408,7 @@ async function initApp(){
   if(authSession) await loadLiveProfile(); else renderAuth();
   sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){clearSession();renderAuth();}else if(session){authSession=session;}});
 }
-function clearSession(){liveGoalChanges=[];goalChangeReason='';advisorGoalChange=null;goalChangeDraft={title:'',amount:'',purpose:'',date:'',reason:'',confirmed:false};authSession=null;liveProfile=null;liveUserRole='customer';state=structuredClone(DEFAULT);liveProgressSummary=null;liveProgress=[];liveAnnualBenefit=null;liveSavingsGoals=[];liveAchievementRequests=[];liveFinancialMap=[];liveFinancialObjects=[];liveMicrosavings=[];liveReferrals=[];advisorCustomer=null;advisorCustomers=[];advisorImpulses=[];advisorReview=null;reviewDraft={result:'',text:'',evidence:'',confirmed:false};advisorReferral=null;referralMatches=[];referralSelected=null;referralDraft={query:'',date:'',evidence:'',confirmed:false};feedback='';dataError='';pendingActions.clear();}
+function clearSession(){liveGoalChanges=[];goalChangeReason='';advisorGoalChange=null;goalChangeDraft={title:'',amount:'',purpose:'',date:'',reason:'',confirmed:false};authSession=null;liveProfile=null;liveUserRole='customer';state=structuredClone(DEFAULT);liveProgressSummary=null;liveProgress=[];liveAnnualBenefit=null;liveSavingsGoals=[];liveAchievementRequests=[];liveFinancialMap=[];liveFinancialObjects=[];liveMicrosavings=[];liveReferrals=[];advisorCustomer=null;advisorCustomers=[];advisorImpulses=[];advisorReview=null;reviewDraft={result:'',text:'',evidence:'',confirmed:false};advisorReferral=null;referralMatches=[];referralSelected=null;referralDraft={query:'',date:'',evidence:'',confirmed:false};advisorAchievement=null;achievementDraft={confirmed:false};feedback='';dataError='';pendingActions.clear();}
 async function loadAchievementRequests(){const {data,error}=await sb.schema('api').from('my_savings_goal_achievement_requests').select('*').order('requested_at',{ascending:false});if(error)throw error;liveAchievementRequests=data||[];}
 async function loadCustomerData(){await loadLiveProgress();await Promise.all([loadLiveFinancialData(),loadLiveAnnualBenefit(),loadLiveReviewRequests(),loadLiveSavings(),loadLiveReferrals(),loadAchievementRequests(),loadGoalChanges()]);}
 async function loadCustomerOverview(personId){const {data,error}=await sb.schema('api').rpc('advisor_customer_overview',{p_person_id:personId});if(error)throw error;advisorCustomer=data;}
@@ -282,7 +417,7 @@ function workflowError(e){return ({'Achievement request pending':'Bitte zuerst d
 async function refreshData(){
  if(!authSession||refreshing||pendingActions.size)return;
  const actor=authSession.user.id;refreshing=true;
- try{if(liveUserRole==='customer')await loadCustomerData();else{await loadAdvisorImpulses();if(state.page==='goalchange'&&advisorGoalChange)await loadAdvisorGoalChange(advisorGoalChange.request_id);if(state.page==='reviewcheck'&&advisorReview)await loadAdvisorReview(advisorReview.review_id);if(state.page==='referralcheck'&&advisorReferral)await loadAdvisorReferral(advisorReferral.referral_id);if(advisorCustomer?.person?.person_id)await loadCustomerOverview(advisorCustomer.person.person_id);}dataError='';}
+ try{if(liveUserRole==='customer')await loadCustomerData();else{await loadAdvisorImpulses();if(state.page==='goalchange'&&advisorGoalChange)await loadAdvisorGoalChange(advisorGoalChange.request_id);if(state.page==='reviewcheck'&&advisorReview)await loadAdvisorReview(advisorReview.review_id);if(state.page==='referralcheck'&&advisorReferral)await loadAdvisorReferral(advisorReferral.referral_id);if(state.page==='achievementcheck'&&advisorAchievement)await loadAdvisorAchievement(advisorAchievement.request_id);if(advisorCustomer?.person?.person_id)await loadCustomerOverview(advisorCustomer.person.person_id);}dataError='';}
  catch(e){if(actor===authSession?.user?.id)dataError='Aktualisierung fehlgeschlagen. Bitte versuche es erneut.';}
  finally{refreshing=false;if(authSession)render();}
 }
@@ -298,19 +433,14 @@ async function runWorkflow(key,mutation,reload,success){
  }finally{pendingActions.delete(key);if(authSession)render();}
 }
 function bindWorkflow(){
- bindReferralWorkflow();bindReviewWorkflow();bindGoalChangeWorkflow();
+ bindReferralWorkflow();bindReviewWorkflow();bindGoalChangeWorkflow();bindAchievementWorkflow();
  const refresh=document.querySelector('[data-refresh]');if(refresh)refresh.onclick=()=>refreshData();
  const request=document.querySelector('[data-request-achievement]');if(request)request.onclick=()=>{
   const goal=state.savingsGoal;if(!goal||goal.status!=='active')return;
   if(liveAchievementRequests.some(r=>r.savings_goal_id===goal.id&&['requested','in_review'].includes(r.status)))return;
   runWorkflow('request',async()=>{const {error}=await sb.schema('api').rpc('request_savings_goal_achievement',{p_savings_goal_id:goal.id,p_note:null});if(error)throw error;},loadCustomerData,'Du hast dein Sparziel als erreicht gemeldet. Cashback Finance prüft die Zielerreichung.');
  };
- document.querySelectorAll('[data-resolve-achievement]').forEach(button=>button.onclick=()=>{
-  if(liveUserRole==='customer')return;
-  const decision=button.dataset.decision;
-  if(!confirm(decision==='verified'?'Hast du die Zielerreichung fachlich geprüft und möchtest sie verbindlich bestätigen?':'Möchtest du diese Zielerreichungsmeldung ablehnen?'))return;
-  runWorkflow('resolve',async()=>{const {error}=await sb.schema('api').rpc('advisor_resolve_savings_goal_achievement',{p_request_id:button.dataset.resolveAchievement,p_decision:decision});if(error)throw error;},async()=>{await loadAdvisorImpulses();await loadCustomerOverview(button.dataset.personId);},decision==='verified'?'Zielerreichung bestätigt. Vorgang und Kundenakte wurden aktualisiert.':'Zielerreichung abgelehnt. Der Vorgang wurde geschlossen.');
- });
+
 }
 // A focus event can arrive before a click. Keep the current DOM and drafts intact.
 window.addEventListener('focus',()=>{
