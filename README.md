@@ -37,3 +37,9 @@ Offen vor Produktionsfreigabe: weitere fachliche Online-Abnahmen, tatsächliche 
 Die freigegebene Migration add_advisor_financial_area_year_status ergänzt reviewed_this_year in der bestehenden Advisor-Kundenübersicht. Sie verwendet dieselbe serverseitige Definition wie die Customer-Finanzlandkarte. Die Advisor-Anzeige trennt den Jahresprüfstatus vom gespeicherten Bearbeitungsstatus. Fehlende historische Prüfdaten bleiben als nicht hinterlegt sichtbar.
 
 Syntax und 31 Frontend-Prüfungen bestanden. Backend-Abnahme mit ROLLBACK: Gleichheit mit Customer-View, Zugriffssperre für Customer/anonym, Grenzen für Jahr, Verifikation, Person und Finanzbereich. Keine neuen Progress-Ereignisse und keine historische Datenkorrektur. Online-Advisor-Abnahme des Branch-Deploys steht noch aus.
+
+## Ergänzung V1.4.4 – sichere Textausgabe
+
+Auf Basis von V1.4.3 (466ee8e): dynamische Textfelder der Advisor-Kundenakte sowie Ort/Kundennummer der Advisor-Suche werden konsequent HTML-escaped ausgegeben. Dies umfasst Haushaltsangaben, Fallback-Bezeichnungen und Statuswerte. Der neue Achievement-Prüfablauf, Referral-Filter und Focus-Fix bleiben erhalten.
+
+Syntax und 33 Frontend-Prüfungen bestanden. Lokale Tests enthalten HTML-Tags und Sonderzeichen; keine Testangriffswerte wurden im Core gespeichert. Keine Backend-, Auth-, Benefit- oder Datenänderung. Nur development; keine Produktionsfreigabe. Online-Abnahme nach Branch-Deploy erforderlich.
