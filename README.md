@@ -43,3 +43,7 @@ Syntax und 31 Frontend-Prüfungen bestanden. Backend-Abnahme mit ROLLBACK: Gleic
 Auf Basis von V1.4.3 (466ee8e): dynamische Textfelder der Advisor-Kundenakte sowie Ort/Kundennummer der Advisor-Suche werden konsequent HTML-escaped ausgegeben. Dies umfasst Haushaltsangaben, Fallback-Bezeichnungen und Statuswerte. Der neue Achievement-Prüfablauf, Referral-Filter und Focus-Fix bleiben erhalten.
 
 Syntax und 33 Frontend-Prüfungen bestanden. Lokale Tests enthalten HTML-Tags und Sonderzeichen; keine Testangriffswerte wurden im Core gespeichert. Keine Backend-, Auth-, Benefit- oder Datenänderung. Nur development; keine Produktionsfreigabe. Online-Abnahme nach Branch-Deploy erforderlich.
+
+## Ergänzung V1.4.5 – SDK festgelegt
+
+Supabase JS auf 2.117.2 festgelegt; SHA-384-Integritätsprüfung und crossorigin=anonymous ergänzt. Der geprüfte exakte CDN-Inhalt war byteidentisch zum bisherigen @2-Aufruf. Keine Backend- oder Fachlogikänderung. Nur development; keine Produktionsfreigabe.
