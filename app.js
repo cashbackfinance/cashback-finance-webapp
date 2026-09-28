@@ -225,11 +225,7 @@ function bindReferralWorkflow(){
  const date=document.querySelector('#onboardingDate');if(date)date.oninput=()=>referralDraft.date=date.value;
  const evidence=document.querySelector('#referralEvidence');if(evidence)evidence.oninput=()=>referralDraft.evidence=evidence.value;
  const checked=document.querySelector('#referralConfirmed');if(checked)checked.onchange=()=>referralDraft.confirmed=checked.checked;
- const search=document.querySelector('[data-referral-search]');if(search)search.onclick=async()=>{if(!referralDraft.query.trim()){feedback='Bitte Name oder Kundennummer eingeben.';render();return;}search.disabled=true;try{const {data,error}=await sb.schema('api').rpc('advisor_search_customers',{p_query:referralDraft.query.trim()});if(error)throw error;referralMatches=(data||[]).filter(
-  c =>
-    c.person_id !== advisorReferral.referring_person_id &&
-    (!Object.prototype.hasOwnProperty.call(c,'status') || c.status === 'customer')
-);feedback=referralMatches.length?'':'Keine passenden CF-Kunden gefunden.';render();}catch(e){search.disabled=false;alert('Die Kundensuche konnte nicht ausgeführt werden.');}};
+ const search=document.querySelector('[data-referral-search]');if(search)search.onclick=async()=>{if(!referralDraft.query.trim()){feedback='Bitte Name oder Kundennummer eingeben.';render();return;}search.disabled=true;try{const {data,error}=await sb.schema('api').rpc('advisor_search_customers',{p_query:referralDraft.query.trim()});if(error)throw error;referralMatches=(data||[]).filter(c=>c.status==='customer'&&c.person_id!==advisorReferral.referring_person_id);feedback=referralMatches.length?'':'Keine passenden CF-Kunden gefunden.';render();}catch(e){search.disabled=false;alert('Die Kundensuche konnte nicht ausgeführt werden.');}};
  document.querySelectorAll('[data-select-referral-person]').forEach(b=>b.onclick=()=>{referralSelected=referralMatches.find(c=>c.person_id===b.dataset.selectReferralPerson)||null;render();});
  const qualify=document.querySelector('[data-qualify-referral]');if(qualify)qualify.onclick=()=>{
   const completed=new Date(referralDraft.date);
